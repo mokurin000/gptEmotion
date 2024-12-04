@@ -92,7 +92,7 @@ def main():
         output_path = path.join(OUTPUT_PATH, filename)
         df = pl.read_excel(input_path)
 
-        df = df.filter(pl.col("评论内容").len() != 0)
+        df = df.filter(pl.col("评论内容").str.len_bytes() != 0)
         df = df.with_columns(
             pl.col("评论内容")
             .map_elements(process, return_dtype=pl.Struct, strategy="threading")
