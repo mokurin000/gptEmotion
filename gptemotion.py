@@ -31,7 +31,7 @@ OPENAI = OpenAI()
 @cachier()
 def process_with_gpt(text: str) -> Result | None:
     context = [
-        {"role": "system", "content": "必须以四字以内描述，简短为佳"},
+        {"role": "system", "content": "输出必须在五字以内，不包含标点符号"},
         {
             "role": "user",
             "content": text,
@@ -73,13 +73,14 @@ def main():
         output_path = path.join(OUTPUT_PATH, filename)
         df = pl.read_excel(input_path)
 
-        df = df.limit(50)
+        df = df.limit(20)
         df = df.with_columns(
             pl.col("评论内容")
             .map_elements(process, return_dtype=pl.Struct, strategy="threading")
             .alias("result")
         ).unnest("result")
         df.write_excel(output_path)
+        break
 
 
 if __name__ == "__main__":
