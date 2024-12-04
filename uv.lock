@@ -90,7 +90,6 @@ dependencies = [
     { name = "polars" },
     { name = "pydantic" },
     { name = "python-dotenv" },
-    { name = "tqdm" },
     { name = "xlsxwriter" },
 ]
 
@@ -102,7 +101,6 @@ requires-dist = [
     { name = "polars", specifier = ">=1.16.0" },
     { name = "pydantic", specifier = ">=2.10.3" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "tqdm", specifier = ">=4.67.1" },
     { name = "xlsxwriter", specifier = ">=3.2.0" },
 ]
 

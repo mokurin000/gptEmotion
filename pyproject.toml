@@ -11,6 +11,5 @@ dependencies = [
     "polars>=1.16.0",
     "pydantic>=2.10.3",
     "python-dotenv>=1.0.1",
-    "tqdm>=4.67.1",
     "xlsxwriter>=3.2.0",
 ]

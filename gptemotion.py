@@ -1,4 +1,5 @@
 import os
+import logging
 from os import listdir, path
 
 import polars as pl
@@ -7,9 +8,10 @@ from cachier import cachier
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from tqdm import tqdm
-
-PROGRESS_BAR = None
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__package__)
 
 
 class Result(BaseModel):
@@ -25,12 +27,11 @@ OUTPUT_PATH = os.environ["OUTPUT_PATH"]
 
 OPENAI = OpenAI()
 
-os.environ["POLARS_MAX_THREADS"] = "32"
-
 
 @cachier()
 def process_with_gpt(text: str) -> Result | None:
     context = [
+        {"role": "system", "content": "必须以四字以内描述，简短为佳"},
         {
             "role": "user",
             "content": text,
@@ -58,14 +59,11 @@ def process(text: str) -> dict | Result:
     DEFAULT = {"情感体验": None, "事件认知": None, "行为反应": None}
 
     result = process_with_gpt(text)
-    if PROGRESS_BAR is not None:
-        PROGRESS_BAR.update()
+    logger.info(f"{text.__repr__()}: {result}")
     return result.model_dump() if result is not None else DEFAULT
 
 
 def main():
-    global PROGRESS_BAR
-
     os.makedirs(OUTPUT_PATH, exist_ok=True)
 
     for filename in (
@@ -75,15 +73,12 @@ def main():
         output_path = path.join(OUTPUT_PATH, filename)
         df = pl.read_excel(input_path)
 
-        total = len(df)
-        with tqdm(total=total, desc=filename.removesuffix(".xlsx")) as pbar:
-            PROGRESS_BAR = pbar
-            df = df.with_columns(
-                pl.col("评论内容")
-                .map_elements(process, return_dtype=pl.Struct, strategy="threading")
-                .alias("result")
-            ).unnest("result")
-        PROGRESS_BAR = None
+        df = df.limit(50)
+        df = df.with_columns(
+            pl.col("评论内容")
+            .map_elements(process, return_dtype=pl.Struct, strategy="threading")
+            .alias("result")
+        ).unnest("result")
         df.write_excel(output_path)
 
 
