@@ -24,6 +24,7 @@ load_dotenv()
 
 DATA_PATH = os.environ["DATA_PATH"]
 OUTPUT_PATH = os.environ["OUTPUT_PATH"]
+RESULT_PATH = os.environ["RESULT_PATH"]
 
 OPENAI = OpenAI()
 
@@ -53,7 +54,7 @@ def process_with_gpt(text: str) -> Result | None:
     except KeyboardInterrupt:
         exit(1)
     except Exception as e:
-        logger.error(f"failed to process {text}:", e)
+        logger.error("failed to process %s:" % text, e)
         return None
 
 
@@ -63,12 +64,16 @@ def process(text: str) -> dict | Result:
     if text is None:
         return DEFAULT
 
-    logger.info(f"started process for text {text.__repr__()}")
+    logger.info("started process for text %s" % text.__repr__())
+
+    if text in cache and cache[text] is None:
+        cache.pop(text)
     if text in cache:
         result = cache[text]
     else:
         result = process_with_gpt(text)
-        cache[text] = result
+        if result is not None:
+            cache[text] = result
     logger.info(f"{text.__repr__()}: {result}")
     return result.model_dump() if result is not None else DEFAULT
 
@@ -76,19 +81,35 @@ def process(text: str) -> dict | Result:
 def main():
     os.makedirs(OUTPUT_PATH, exist_ok=True)
 
-    for filename in (
-        filename for filename in listdir(DATA_PATH) if filename.endswith(".xlsx")
-    ):
+    def find_excels(path: str):
+        for filename in listdir(path):
+            if not filename.endswith(".xlsx"):
+                continue
+            yield filename
+
+    for filename in find_excels(DATA_PATH):
         input_path = path.join(DATA_PATH, filename)
         output_path = path.join(OUTPUT_PATH, filename)
         df = pl.read_excel(input_path)
 
-        df.with_columns(
+        df = df.filter(pl.col("评论内容").len() != 0)
+        df = df.with_columns(
             pl.col("评论内容")
             .map_elements(process, return_dtype=pl.Struct, strategy="threading")
             .alias("result")
         ).unnest("result")
         df.write_excel(output_path)
+
+    total: pl.DataFrame = pl.concat(
+        map(
+            pl.read_excel,
+            map(lambda p: path.join(OUTPUT_PATH, p), find_excels(OUTPUT_PATH)),
+        )
+    )
+
+    os.makedirs(RESULT_PATH, exist_ok=True)
+    for field in ["情感体验", "事件认知", "行为反应"]:
+        total[field].value_counts(sort=True).write_excel(f"{RESULT_PATH}/{field}.xlsx")
 
 
 if __name__ == "__main__":
