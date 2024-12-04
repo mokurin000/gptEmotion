@@ -109,7 +109,12 @@ def main():
 
     os.makedirs(RESULT_PATH, exist_ok=True)
     for field in ["情感体验", "事件认知", "行为反应"]:
-        total[field].value_counts(sort=True).write_excel(f"{RESULT_PATH}/{field}.xlsx")
+        total[field].value_counts(sort=True).with_columns(
+            pl.col("count")
+            .map_elements(lambda c: c * 100 / len(total))
+            .round(2)
+            .alias("perc")
+        ).write_excel(f"{RESULT_PATH}/{field}.xlsx")
 
 
 if __name__ == "__main__":
