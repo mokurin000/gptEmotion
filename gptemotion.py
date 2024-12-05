@@ -111,10 +111,11 @@ def main():
     for field in ["情感体验", "事件认知", "行为反应"]:
         total[field].value_counts(sort=True).with_columns(
             pl.col("count")
-            .map_elements(lambda c: c * 100 / len(total))
+            .map_elements(lambda c: c * 100 / len(total), return_dtype=pl.Float64)
             .round(2)
             .alias("perc")
         ).write_excel(f"{RESULT_PATH}/{field}.xlsx")
+    logger.info("processed %d comments" % len(total))
 
 
 if __name__ == "__main__":
