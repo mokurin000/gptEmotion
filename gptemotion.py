@@ -74,7 +74,7 @@ def process(text: str) -> dict | Result:
         result = process_with_gpt(text)
         if result is not None:
             cache[text] = result
-    logger.info(f"{text.__repr__()}: {result}")
+    logger.info("%s: %s" % (text.__repr__(), result))
     return result.model_dump() if result is not None else DEFAULT
 
 
