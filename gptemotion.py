@@ -59,7 +59,7 @@ def process_with_gpt(text: str) -> Result | None:
 
 
 def process(text: str) -> dict | Result:
-    DEFAULT = {"情感体验": None, "事件认知": None, "行为反应": None}
+    DEFAULT = {key: None for key in Result.model_fields.keys()}
 
     if text is None:
         return DEFAULT
@@ -108,7 +108,7 @@ def main():
     )
 
     os.makedirs(RESULT_PATH, exist_ok=True)
-    for field in ["情感体验", "事件认知", "行为反应"]:
+    for field in Result.model_fields.keys():
         total[field].value_counts(sort=True).with_columns(
             pl.col("count")
             .map_elements(lambda c: c * 100 / len(total), return_dtype=pl.Float64)
