@@ -33,7 +33,7 @@ cache = Cache("temp")
 
 def process_with_gpt(text: str) -> Result | None:
     context = [
-        {"role": "system", "content": "输出必须在五字以内，不包含标点符号"},
+        {"role": "system", "content": "必须以两个字简述，不添加标点符号"},
         {
             "role": "user",
             "content": text,
@@ -46,15 +46,15 @@ def process_with_gpt(text: str) -> Result | None:
             model="gpt-4o",
             n=1,
             temperature=0.2,
-            response_format=Result,
             timeout=10.0,
+            response_format=Result,
         )
         content = completion.choices[0].message.parsed
         return content
     except KeyboardInterrupt:
         exit(1)
     except Exception as e:
-        logger.error("failed to process %s:" % text, e)
+        logger.error("failed to process %s: %s" % (text, e))
         return None
 
 
@@ -74,7 +74,9 @@ def process(text: str) -> dict | Result:
         result = process_with_gpt(text)
         if result is not None:
             cache[text] = result
-    logger.info("%s: %s" % (text.__repr__(), result))
+
+    if result is not None:
+        logger.info("%s: %s" % (text.__repr__(), result))
     return result.model_dump() if result is not None else DEFAULT
 
 
